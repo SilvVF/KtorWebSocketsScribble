@@ -1,20 +1,25 @@
 package com.silvvf
 
+import com.silvvf.routes.createRoomRoute
+import com.silvvf.routes.getRoomsRoute
 import com.silvvf.session.DrawingSession
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.gson.*
+import io.ktor.routing.*
 import io.ktor.sessions.*
 import io.ktor.util.*
 import io.ktor.util.pipeline.*
 import io.ktor.websocket.*
 
+val server = DrawingServer()
+
 fun main() {
     embeddedServer(
         factory =  Netty,
-        port = 8080,
+        port = 8001,
         host = "0.0.0.0",
     ) {
         install(Sessions) {
@@ -36,6 +41,10 @@ fun main() {
             gson {
 
             }
+        }
+        install(Routing) {
+            createRoomRoute()
+            getRoomsRoute()
         }
     }.start(wait = true)
 }
