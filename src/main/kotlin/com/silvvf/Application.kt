@@ -1,7 +1,9 @@
 package com.silvvf
 
+import com.google.gson.Gson
 import com.silvvf.routes.createRoomRoute
 import com.silvvf.routes.getRoomsRoute
+import com.silvvf.routes.joinRoomRoute
 import com.silvvf.session.DrawingSession
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -15,6 +17,7 @@ import io.ktor.util.pipeline.*
 import io.ktor.websocket.*
 
 val server = DrawingServer()
+val gson = Gson()
 
 fun main() {
     embeddedServer(
@@ -26,6 +29,7 @@ fun main() {
             //attach the session to
             cookie<DrawingSession>("SESSION")
         }
+        //Intercept Guarantees each cline will have both a client id and a session id
         intercept(ApplicationCallPipeline.Features) {
             //executed whenever a client makes a request to the server
             //check if a session already exists
@@ -45,6 +49,7 @@ fun main() {
         install(Routing) {
             createRoomRoute()
             getRoomsRoute()
+            joinRoomRoute()
         }
     }.start(wait = true)
 }

@@ -99,3 +99,51 @@ fun Route.getRoomsRoute() {
         }
     }
 }
+
+fun Route.joinRoomRoute() {
+    route("/api/joinRoom") {
+        get {
+            val username = call.parameters["username"]
+            val roomName = call.parameters["roomname"]
+            if (username == null ||  roomName == null){
+                call.respond(HttpStatusCode.BadRequest)
+                return@get
+            }
+
+            val room = server.rooms[roomName]
+            when  {
+                room == null -> call.respond(
+                    HttpStatusCode.OK,
+                    BasicApiResponse(
+                        successful = false,
+                        message = "room not found"
+                    )
+                )
+                room.containsPlayer(username) -> {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BasicApiResponse(
+                            successful = false,
+                            message = "player with this username already exists"
+                        )
+                    )
+                }
+                room.players.size >= room.maxPlayers -> {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BasicApiResponse(
+                            successful = false,
+                            message = "room is full"
+                        )
+                    )
+                }
+                else -> {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BasicApiResponse(successful = true)
+                    )
+                }
+            }
+        }
+    }
+}

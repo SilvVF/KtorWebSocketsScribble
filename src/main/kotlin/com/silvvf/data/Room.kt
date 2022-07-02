@@ -28,5 +28,12 @@ class Room(
             )
         }
     }
+
+    fun containsPlayer(username: String): Boolean {
+        players.forEach {
+            if (it.username == username) return true
+        }
+        return false
+    }
 }
 
