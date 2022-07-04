@@ -1,21 +1,64 @@
 package com.silvvf.routes
 
-import com.google.gson.Gson
 import com.google.gson.JsonParser
-import com.silvvf.data.models.BaseModel
-import com.silvvf.data.models.ChatMessage
+import com.silvvf.data.Player
+import com.silvvf.data.Room
+import com.silvvf.data.models.*
 import com.silvvf.gson
+import com.silvvf.server
 import com.silvvf.session.DrawingSession
-import com.silvvf.util.Constants
+import com.silvvf.util.Constants.TYPE_ANNOUNCEMENT
 import com.silvvf.util.Constants.TYPE_CHAT_MESSAGE
-import io.ktor.gson.*
+import com.silvvf.util.Constants.TYPE_DRAW_DATA
+import com.silvvf.util.Constants.TYPE_JOIN_ROOM_HANDSHAKE
 import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
-import io.ktor.util.Identity.decode
 import io.ktor.websocket.*
-import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.channels.consumeEach
+
+fun Route.gameWebSocketRoute() {
+    route("/ws/draw") {
+        //uses the websocket wrapper created place of normal web socket
+        standardWebSocket { socket, clientId, message, payload ->
+            when(payload) {
+                is DrawData -> {
+                    //get the room the player is drawing in
+                    val room = server.rooms[payload.roomName] ?: return@standardWebSocket
+                    //if the game is in the running state
+                    if (room.phase == Room.Phase.GAME_RUNNING) {
+                        //broadcast the draw data to all players except the one drawing
+                        room.broadcastToAllExcept(message, clientId)
+                    }
+                }
+                is ChatMessage -> {
+
+                }
+                is JoinRoomHandshake -> {
+                    //find the room
+                    val room = server.rooms[payload.roomName]
+                    if (room == null) {
+                        //if the room does not exist send an error response to client
+                        val gameError = GameError(GameError.ERROR_ROOM_NOT_FOUND)
+                        socket.send(Frame.Text(gson.toJson(gameError)))
+                        return@standardWebSocket
+                    }
+                    val player = Player(
+                        username = payload.username,
+                        socket,
+                        clientId = payload.clientId
+                    )
+                    server.playerJoined(player)
+                    //check if player with the same name already exists
+                    if (!room.containsPlayer(player.username)) {
+                        room.addPlayer(player.clientId, player.username, socket)
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 //wrapper function used inside a route
 //function handles parsing the json to gson and getting the
@@ -58,6 +101,9 @@ fun Route.standardWebSocket(
                     //extract the type from the json object -> inherits from BaseModel
                     val type = when(jsonObj.get("type").asString) {
                         TYPE_CHAT_MESSAGE -> ChatMessage::class.java
+                        TYPE_DRAW_DATA -> DrawData::class.java
+                        TYPE_ANNOUNCEMENT -> Announcement::class.java
+                        TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         else -> BaseModel::class.java //should never happen
                     }
                     //convert the frame and json to a gson object
