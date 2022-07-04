@@ -2,6 +2,7 @@ package com.silvvf
 
 import com.google.gson.Gson
 import com.silvvf.routes.createRoomRoute
+import com.silvvf.routes.gameWebSocketRoute
 import com.silvvf.routes.getRoomsRoute
 import com.silvvf.routes.joinRoomRoute
 import com.silvvf.session.DrawingSession
@@ -13,7 +14,6 @@ import io.ktor.gson.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
 import io.ktor.util.*
-import io.ktor.util.pipeline.*
 import io.ktor.websocket.*
 
 val server = DrawingServer()
@@ -50,6 +50,7 @@ fun main() {
             createRoomRoute()
             getRoomsRoute()
             joinRoomRoute()
+            gameWebSocketRoute()
         }
     }.start(wait = true)
 }
