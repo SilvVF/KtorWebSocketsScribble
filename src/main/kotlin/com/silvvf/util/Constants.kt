@@ -9,4 +9,7 @@ object Constants {
     const val TYPE_JOIN_ROOM_HANDSHAKE = "TYPE_JOIN_ROOM_HANDSHAKE"
     const val TYPE_GAME_ERROR = "TYPE_GAME_ERROR"
     const val TYPE_PHASE_CHANGE = "TYPE_PHASE_CHANGE"
+    const val TYPE_CHOOSEN_WORD = "TYPE_CHOOSEN_WORD"
+
+    const val WORD_NOT_GUESSED_PENALTY = 20
 }

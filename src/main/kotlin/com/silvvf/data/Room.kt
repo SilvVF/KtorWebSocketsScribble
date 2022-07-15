@@ -1,8 +1,10 @@
 package com.silvvf.data
 
 import com.silvvf.data.models.Announcement
+import com.silvvf.data.models.ChosenWord
 import com.silvvf.data.models.PhaseChange
 import com.silvvf.gson
+import com.silvvf.util.Constants
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
 
@@ -14,6 +16,9 @@ class Room(
 ) {
     private var phaseChangedListener: ((Phase) -> Unit)? = null
     private var timerJob: Job? = null
+    private var winningPlayer = listOf<Player>()
+    private var drawingPlayer: Player? = null
+    private var word: String? = null
     var phase = Phase.WAITING_FOR_PLAYERS
         set(value) {
             //only one thread at a time can access this setter
@@ -92,12 +97,13 @@ class Room(
 
     private fun timeAndNotify(ms: Long) {
         timerJob?.cancel()
+        drawingPlayer = players.find { it.isDrawing }
         //no lifecycle on a server everything can be global scope
         timerJob = GlobalScope.launch {
             val phaseChange = PhaseChange(
                 phase = phase,
                 time = ms,
-                drawingPlayer = players.find { it.isDrawing }?.username
+                drawingPlayer = drawingPlayer?.username ?: ""
             )
             //10,000 / 1,000 = 10 update every clients time 10 times
             repeat((ms / UPDATE_FREQ).toInt()) {
@@ -127,6 +133,11 @@ class Room(
         }
         return false
     }
+    //called from the WebSocketRoute handles starting the game flow and setting the  word
+    fun setWordAndSwitchToGameRunning(word: String) {
+        this.word = word
+        phase = Phase.GAME_RUNNING
+    }
     private fun waitingForPlayers() {
         GlobalScope.launch {
             val phaseChange = PhaseChange(
@@ -153,7 +164,26 @@ class Room(
 
     }
     private fun showWord(){
-
+        GlobalScope.launch {
+            drawingPlayer?.let { drawingPlayer ->
+                if (winningPlayer.isEmpty()) {
+                    //no winning player take out penalty
+                    drawingPlayer.score -= Constants.WORD_NOT_GUESSED_PENALTY
+                }
+            }
+            word?.let {
+                val chosenWord = ChosenWord(
+                    ChosenWord = it,
+                    roomName = name
+                )
+                //broadcast what the word was - type is handled by the wrapper class for passing frames
+                broadcast(gson.toJson(chosenWord))
+                //how long the word will be shown before a new round
+                timeAndNotify(DELAY_SHOW_WORD_TO_NEW_ROUND)
+                val phaseChange = PhaseChange(Phase.SHOW_WORD, DELAY_SHOW_WORD_TO_NEW_ROUND)
+                broadcast(gson.toJson(phaseChange))
+            }
+        }
     }
     enum class Phase{
         WAITING_FOR_PLAYERS,
