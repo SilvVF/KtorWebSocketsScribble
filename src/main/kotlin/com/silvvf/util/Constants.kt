@@ -1,6 +1,7 @@
 package com.silvvf.util
 
 object Constants {
+    const val  TYPE_NEW_WORDS = "TYPE_NEW_WORDS"
     const val MAX_ROOM_SIZE = 8
     const val MIN_ROOM_SIZE = 2
     const val TYPE_CHAT_MESSAGE = "TYPE_CHAT_MESSAGE"
@@ -9,7 +10,7 @@ object Constants {
     const val TYPE_JOIN_ROOM_HANDSHAKE = "TYPE_JOIN_ROOM_HANDSHAKE"
     const val TYPE_GAME_ERROR = "TYPE_GAME_ERROR"
     const val TYPE_PHASE_CHANGE = "TYPE_PHASE_CHANGE"
-    const val TYPE_CHOOSEN_WORD = "TYPE_CHOOSEN_WORD"
+    const val TYPE_CHOSEN_WORD = "TYPE_CHOSEN_WORD"
+    const val TYPE_GAME_STATE = "TYPE_GAME_STATE"
 
-    const val WORD_NOT_GUESSED_PENALTY = 20
 }
