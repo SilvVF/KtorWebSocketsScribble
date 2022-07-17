@@ -9,9 +9,11 @@ import com.silvvf.server
 import com.silvvf.session.DrawingSession
 import com.silvvf.util.Constants.TYPE_ANNOUNCEMENT
 import com.silvvf.util.Constants.TYPE_CHAT_MESSAGE
-import com.silvvf.util.Constants.TYPE_CHOOSEN_WORD
+import com.silvvf.util.Constants.TYPE_CHOSEN_WORD
 import com.silvvf.util.Constants.TYPE_DRAW_DATA
+import com.silvvf.util.Constants.TYPE_GAME_STATE
 import com.silvvf.util.Constants.TYPE_JOIN_ROOM_HANDSHAKE
+import com.silvvf.util.Constants.TYPE_NEW_WORDS
 import com.silvvf.util.Constants.TYPE_PHASE_CHANGE
 import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
@@ -34,7 +36,12 @@ fun Route.gameWebSocketRoute() {
                     }
                 }
                 is ChatMessage -> {
-
+                    val room = server.rooms[payload.roomName] ?: return@standardWebSocket
+                    //returns if the guess was correct or note
+                    if(!room.checkWordAndNotifyPlayers(payload.copy())) {
+                        //send the raw json conatining the chat message
+                        room.broadcast(message)
+                    }
                 }
                 is JoinRoomHandshake -> {
                     //find the room
@@ -61,6 +68,9 @@ fun Route.gameWebSocketRoute() {
                     val room = server.rooms[payload.roomName] ?: return@standardWebSocket
                     //handles setting the word and changing the game phase
                     room.setWordAndSwitchToGameRunning(payload.ChosenWord)
+                }
+                is NewWords -> {
+
                 }
             }
         }
@@ -113,7 +123,9 @@ fun Route.standardWebSocket(
                         TYPE_ANNOUNCEMENT -> Announcement::class.java
                         TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         TYPE_PHASE_CHANGE -> PhaseChange::class.java
-                        TYPE_CHOOSEN_WORD -> ChosenWord::class.java
+                        TYPE_CHOSEN_WORD -> ChosenWord::class.java
+                        TYPE_GAME_STATE -> GameState::class.java
+                        TYPE_NEW_WORDS -> NewWords::class.java
                         else -> BaseModel::class.java //should never happen
                     }
                     //convert the frame and json to a gson object
